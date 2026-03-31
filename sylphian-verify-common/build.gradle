@@ -1,0 +1,10 @@
+plugins {
+    id 'java-library'
+}
+ 
+dependencies {
+    api project(':sylphian-verify-api')
+    api 'com.github.ben-manes.caffeine:caffeine:3.2.3'
+    api 'net.kyori:adventure-api:4.17.0'
+    api 'com.google.code.gson:gson:2.13.2'
+}

@@ -1,0 +1,8 @@
+/build/
+/.idea/
+/.gradle/
+
+/sylphian-verify-common/build/
+/sylphian-verify-api/build/
+/sylphian-verify-velocity/build/
+/sylphian-verify-paper/build/
