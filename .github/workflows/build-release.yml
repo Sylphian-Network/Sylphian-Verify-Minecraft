@@ -40,4 +40,6 @@ jobs:
 
       - name: Publish GitHub Release
         if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release create ${{ github.ref_name }} sylphian-verify-paper/build/libs/*.jar sylphian-verify-velocity/build/libs/*.jar --title "Release ${{ github.ref_name }}" --notes "Auto-release from workflow"
