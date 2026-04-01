@@ -74,7 +74,7 @@ public class VerifyVelocity {
 
                                     if (!response.isAllowed()) {
                                         logger.info("Player {} ({}) verification failed: {}", player.getUsername(), uuid, response.getReason());
-                                        player.disconnect(MessageUtils.buildKickMessage(response, config));
+                                        player.disconnect(MessageUtils.buildReverificationFailureMessage(config));
                                     } else {
                                         logger.debug("Player {} ({}) verified successfully", player.getUsername(), uuid);
                                     }
@@ -87,7 +87,7 @@ public class VerifyVelocity {
                                             player.getUsername(), uuid, strikes, config.getMaxTimeoutStrikes());
 
                                     if (strikes >= config.getMaxTimeoutStrikes()) {
-                                        player.disconnect(MessageUtils.buildTimeoutMessage(config));
+                                        player.disconnect(MessageUtils.buildReverificationFailureMessage(config));
                                         verifyManager.getTimeoutStrikes().remove(uuid);
                                         logger.warn("Player {} ({}) disconnected due to repeated API timeouts", player.getUsername(), uuid);
                                     }

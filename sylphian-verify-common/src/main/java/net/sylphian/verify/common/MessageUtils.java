@@ -57,4 +57,10 @@ public class MessageUtils {
         String displayReason = config.getApiResponses().getOrDefault(rawReason, "An error occurred while verifying your account. Please try again later.");
         return Component.text(displayReason, NamedTextColor.RED);
     }
+
+    public static Component buildReverificationFailureMessage(VerifyConfig config) {
+        String rawReason = "Re-verification failed";
+        String displayReason = config.getApiResponses().getOrDefault(rawReason, "Your account is no longer verified. This could be because your account is no longer linked or an API error occurred. Please ensure your account is linked and check our website for status updates.");
+        return Component.text(displayReason, NamedTextColor.RED, TextDecoration.BOLD);
+    }
 }

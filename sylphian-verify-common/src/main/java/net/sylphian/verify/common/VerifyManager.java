@@ -92,8 +92,4 @@ public class VerifyManager {
     public VerifyClient getClient() {
         return client;
     }
-
-    public VerifyConfig getConfig() {
-        return config;
-    }
 }
