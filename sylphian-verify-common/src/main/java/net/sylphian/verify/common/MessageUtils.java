@@ -46,12 +46,6 @@ public class MessageUtils {
         return Component.text(displayReason, NamedTextColor.RED);
     }
 
-    public static Component buildTimeoutMessage(VerifyConfig config) {
-        String rawReason = "Verification server timed out";
-        String displayReason = config.getApiResponses().getOrDefault(rawReason, "Verification server timed out too many times.");
-        return Component.text(displayReason, NamedTextColor.RED);
-    }
-
     public static Component buildErrorMessage(VerifyConfig config) {
         String rawReason = "Verification error";
         String displayReason = config.getApiResponses().getOrDefault(rawReason, "An error occurred while verifying your account. Please try again later.");
