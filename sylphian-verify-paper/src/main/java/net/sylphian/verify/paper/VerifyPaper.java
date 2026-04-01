@@ -60,7 +60,7 @@ public final class VerifyPaper extends JavaPlugin implements Listener {
                                 getLogger().info("Player " + player.getName() + " (" + uuid + ") verification failed: " + response.getReason());
 
                                 Bukkit.getScheduler().runTask(this, () ->
-                                        player.kick(MessageUtils.buildKickMessage(response, config))
+                                        player.kick(MessageUtils.buildReverificationFailureMessage(config))
                                 );
                             } else {
                                 getLogger().log(Level.FINE, "Player " + player.getName() + " (" + uuid + ") verified successfully");
@@ -75,7 +75,7 @@ public final class VerifyPaper extends JavaPlugin implements Listener {
 
                             if (strikes >= config.getMaxTimeoutStrikes()) {
                                 Bukkit.getScheduler().runTask(this, () ->
-                                        player.kick(MessageUtils.buildTimeoutMessage(config))
+                                        player.kick(MessageUtils.buildReverificationFailureMessage(config))
                                 );
                                 verifyManager.getTimeoutStrikes().remove(uuid);
                                 getLogger().warning("Player " + player.getName() + " (" + uuid + ") disconnected due to repeated API timeouts");

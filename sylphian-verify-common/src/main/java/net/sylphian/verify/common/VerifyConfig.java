@@ -25,6 +25,7 @@ public class VerifyConfig {
         put("UUID not linked to any forum account", "Your account has not been added to the forum, please add your account before attempting to join again.");
         put("Account not confirmed", "Your forum account is linked but not confirmed. Please use the passcode below.");
         put("Brute Force Cooldown", "Too many failed attempts. Please try again in {time} minutes.");
+        put("Re-verification failed", "Your account is no longer verified. This could be because your account is no longer linked or an API error occurred. Please ensure your account is linked and check our website for status updates.");
     }};
 
     public String getApiUrl() { return apiUrl; }
