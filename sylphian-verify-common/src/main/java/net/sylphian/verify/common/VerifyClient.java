@@ -11,21 +11,25 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
  
 public class VerifyClient implements VerifyService {
     private final String apiUrl;
     private final String apiKey;
+    private final int timeoutSeconds;
     private final HttpClient httpClient;
     private final Gson gson;
     private final Type responseType = new TypeToken<ApiEnvelope<VerificationResponse>>(){}.getType();
  
-    public VerifyClient(String apiUrl, String apiKey) {
+    public VerifyClient(String apiUrl, String apiKey, int timeoutSeconds) {
         this.apiUrl = apiUrl;
         this.apiKey = apiKey;
+        this.timeoutSeconds = timeoutSeconds;
         this.httpClient = HttpClient.newBuilder()
                 .followRedirects(HttpClient.Redirect.ALWAYS)
+                .connectTimeout(Duration.ofSeconds(timeoutSeconds))
                 .build();
         this.gson = new Gson();
     }
@@ -37,6 +41,7 @@ public class VerifyClient implements VerifyService {
                 .header("Accept", "application/json")
                 .header("User-Agent", "VerifyPlugin/1.0")
                 .header("XF-Api-Key", apiKey)
+                .timeout(Duration.ofSeconds(timeoutSeconds))
                 .GET();
 
         return httpClient.sendAsync(requestBuilder.build(), HttpResponse.BodyHandlers.ofString())

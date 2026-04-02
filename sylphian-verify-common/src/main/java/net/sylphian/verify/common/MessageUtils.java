@@ -47,7 +47,7 @@ public class MessageUtils {
     }
 
     public static Component buildErrorMessage(VerifyConfig config) {
-        String rawReason = "Verification error";
+        String rawReason = "Verification API Error";
         String displayReason = config.getApiResponses().getOrDefault(rawReason, "An error occurred while verifying your account. Please try again later.");
         return Component.text(displayReason, NamedTextColor.RED);
     }
