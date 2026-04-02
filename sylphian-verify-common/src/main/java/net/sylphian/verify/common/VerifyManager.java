@@ -22,7 +22,7 @@ public class VerifyManager {
 
     public VerifyManager(VerifyConfig config) {
         this.config = config;
-        this.client = new VerifyClient(config.getApiUrl(), config.getApiKey());
+        this.client = new VerifyClient(config.getApiUrl(), config.getApiKey(), config.getApiTimeoutSeconds());
 
         this.uuidAttempts = Caffeine.newBuilder()
                 .expireAfterWrite(config.getAttemptExpiryMinutes(), TimeUnit.MINUTES)
