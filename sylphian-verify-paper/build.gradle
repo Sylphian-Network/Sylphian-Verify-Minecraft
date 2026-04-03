@@ -19,6 +19,7 @@ dependencies {
 tasks {
     tasks.named('shadowJar') {
         archiveClassifier.set('')
+        archiveVersion.set('')
         mergeServiceFiles()
     }
 
