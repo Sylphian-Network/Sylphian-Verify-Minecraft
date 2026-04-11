@@ -33,7 +33,8 @@ public class VerifyClient implements VerifyService {
                 .build();
         this.gson = new Gson();
     }
- 
+
+    @Override
     public CompletableFuture<VerificationResponse> checkVerification(UUID uuid) {
         String url = apiUrl + "?uuid=" + uuid.toString();
         HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
