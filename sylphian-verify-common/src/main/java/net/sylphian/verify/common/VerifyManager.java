@@ -86,7 +86,7 @@ public class VerifyManager {
     }
 
     public Map<UUID, Integer> getTimeoutStrikes() {
-        return timeoutStrikes;
+        return Map.copyOf(timeoutStrikes);
     }
 
     public VerifyClient getClient() {
