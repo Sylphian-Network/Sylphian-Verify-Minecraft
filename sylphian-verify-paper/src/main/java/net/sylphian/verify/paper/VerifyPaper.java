@@ -45,7 +45,7 @@ public final class VerifyPaper extends JavaPlugin implements Listener {
     }
 
     private void startVerificationTask() {
-        long intervalTicks = config.getVerificationIntervalMinutes() * 60 * 20L;
+        long intervalTicks = config.getVerificationIntervalMinutes() * 60L * 20;
         getLogger().info("Scheduling verification task to run every " + config.getVerificationIntervalMinutes() + " minutes");
 
         Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
