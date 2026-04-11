@@ -3,6 +3,7 @@ package net.sylphian.verify.paper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.sylphian.verify.common.MessageUtils;
+import net.sylphian.verify.common.VerificationResult;
 import net.sylphian.verify.common.VerifyConfig;
 import net.sylphian.verify.common.VerifyManager;
 import org.bukkit.Bukkit;
@@ -92,14 +93,14 @@ public final class VerifyPaper extends JavaPlugin implements Listener {
         UUID uuid = event.getUniqueId();
         String ip = event.getAddress().getHostAddress();
 
-        verifyManager.checkPlayer(uuid, ip).thenAccept(result -> {
+        try {
+            VerificationResult result = verifyManager.checkPlayer(uuid, ip).join();
             if (!result.isAllowed()) {
                 event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_BANNED, result.getKickMessage());
             }
-        }).exceptionally(e -> {
+        } catch (Exception e) {
             getLogger().log(Level.SEVERE, "Error checking verification for " + event.getName(), e);
             event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, MessageUtils.buildErrorMessage(config));
-            return null;
-        });
+        }
     }
 }
