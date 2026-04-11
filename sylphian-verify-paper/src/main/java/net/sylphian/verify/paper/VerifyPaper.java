@@ -51,26 +51,27 @@ public final class VerifyPaper extends JavaPlugin implements Listener {
         Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
             for (Player player : Bukkit.getOnlinePlayers()) {
                 UUID uuid = player.getUniqueId();
+                String playerName = player.getName();
 
                 verifyManager.getClient().checkVerification(uuid)
                         .thenAccept(response -> {
                             verifyManager.getTimeoutStrikes().remove(uuid);
 
                             if (!response.isAllowed()) {
-                                getLogger().info("Player " + player.getName() + " (" + uuid + ") verification failed: " + response.getReason());
+                                getLogger().info("Player " + playerName + " (" + uuid + ") verification failed: " + response.getReason());
 
                                 Bukkit.getScheduler().runTask(this, () ->
                                         player.kick(MessageUtils.buildReverificationFailureMessage(config))
                                 );
                             } else {
-                                getLogger().log(Level.FINE, "Player " + player.getName() + " (" + uuid + ") verified successfully");
+                                getLogger().log(Level.FINE, "Player " + playerName + " (" + uuid + ") verified successfully");
                             }
                         })
                         .exceptionally(ex -> {
                             int strikes = verifyManager.getTimeoutStrikes().getOrDefault(uuid, 0) + 1;
                             verifyManager.getTimeoutStrikes().put(uuid, strikes);
 
-                            getLogger().warning("Verification API exception for player " + player.getName() +
+                            getLogger().warning("Verification API exception for player " + playerName +
                                     " (" + uuid + "), strike " + strikes + "/" + config.getMaxTimeoutStrikes());
 
                             if (strikes >= config.getMaxTimeoutStrikes()) {
@@ -78,7 +79,7 @@ public final class VerifyPaper extends JavaPlugin implements Listener {
                                         player.kick(MessageUtils.buildReverificationFailureMessage(config))
                                 );
                                 verifyManager.getTimeoutStrikes().remove(uuid);
-                                getLogger().warning("Player " + player.getName() + " (" + uuid + ") disconnected due to repeated API timeouts");
+                                getLogger().warning("Player " + playerName + " (" + uuid + ") disconnected due to repeated API timeouts");
                             }
 
                             return null;
