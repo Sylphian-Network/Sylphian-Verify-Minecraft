@@ -2,7 +2,6 @@ package net.sylphian.verify.velocity;
  
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.Strictness;
 import com.google.inject.Inject;
 import com.velocitypowered.api.event.EventTask;
 import com.velocitypowered.api.event.Subscribe;
@@ -17,7 +16,8 @@ import net.sylphian.verify.common.VerificationResult;
 import net.sylphian.verify.common.VerifyConfig;
 import net.sylphian.verify.common.VerifyManager;
 import org.slf4j.Logger;
-
+ 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -44,7 +44,6 @@ public class VerifyVelocity {
         this.dataDirectory = dataDirectory;
         this.gson = new GsonBuilder()
                 .setPrettyPrinting()
-                .setStrictness(Strictness.LENIENT)
                 .create();
     }
  
@@ -52,9 +51,9 @@ public class VerifyVelocity {
     public void onProxyInitialization(ProxyInitializeEvent event) {
         try {
             this.config = VerifyConfig.load(dataDirectory.resolve("config.json"), gson);
-        } catch (Exception e) {
+        } catch (IOException e) {
             logger.error("Could not load config, using defaults", e);
-            this.config = new VerifyConfig();
+            this.config = VerifyConfig.createDefault();
         }
 
         this.verifyManager = new VerifyManager(config);

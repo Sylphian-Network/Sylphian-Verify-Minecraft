@@ -2,7 +2,6 @@ package net.sylphian.verify.paper;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.Strictness;
 import net.sylphian.verify.common.MessageUtils;
 import net.sylphian.verify.common.VerificationResult;
 import net.sylphian.verify.common.VerifyConfig;
@@ -14,6 +13,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -27,15 +27,14 @@ public final class VerifyPaper extends JavaPlugin implements Listener {
     public void onEnable() {
         Gson gson = new GsonBuilder()
                 .setPrettyPrinting()
-                .setStrictness(Strictness.LENIENT)
                 .create();
         Path dataDirectory = getDataFolder().toPath();
 
         try {
             this.config = VerifyConfig.load(dataDirectory.resolve("config.json"), gson);
-        } catch (Exception e) {
+        } catch (IOException e) {
             getLogger().log(Level.SEVERE, "Could not load config, using defaults", e);
-            this.config = new VerifyConfig();
+            this.config = VerifyConfig.createDefault();
         }
 
         this.verifyManager = new VerifyManager(config);

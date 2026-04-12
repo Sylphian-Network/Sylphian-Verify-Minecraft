@@ -11,18 +11,34 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class VerifyConfig {
-    private String apiUrl = "http://www.example.com/api/verify/minecraft";
-    private String apiKey = "";
+    private static final String DEFAULT_API_URL = "http://www.example.com/api/verify/minecraft";
+    private static final String DEFAULT_API_KEY = "";
+    private static final int DEFAULT_VERIFICATION_INTERVAL_MINUTES = 5;
+    private static final int DEFAULT_MAX_TIMEOUT_STRIKES = 3;
+    private static final int DEFAULT_UUID_ATTEMPT_LIMIT = 5;
+    private static final int DEFAULT_IP_ATTEMPT_LIMIT = 10;
+    private static final int DEFAULT_COOLDOWN_MINUTES = 10;
+    private static final int DEFAULT_ATTEMPT_EXPIRY_MINUTES = 5;
+    private static final int DEFAULT_API_TIMEOUT_SECONDS = 10;
 
-    private int verificationIntervalMinutes = 5;
-    private int maxTimeoutStrikes = 3;
-    private int uuidAttemptLimit = 5;
-    private int ipAttemptLimit = 10;
-    private int cooldownMinutes = 10;
-    private int attemptExpiryMinutes = 5;
-    private int apiTimeoutSeconds = 10;
+    private String apiUrl;
+    private String apiKey;
 
-    private Map<String, String> apiResponses = createDefaultApiResponses();
+    private Integer verificationIntervalMinutes;
+    private Integer maxTimeoutStrikes;
+    private Integer uuidAttemptLimit;
+    private Integer ipAttemptLimit;
+    private Integer cooldownMinutes;
+    private Integer attemptExpiryMinutes;
+    private Integer apiTimeoutSeconds;
+
+    private Map<String, String> apiResponses;
+
+    public static VerifyConfig createDefault() {
+        VerifyConfig config = new VerifyConfig();
+        config.ensureDefaults();
+        return config;
+    }
 
     private static Map<String, String> createDefaultApiResponses() {
         Map<String, String> map = new HashMap<>();
@@ -34,14 +50,58 @@ public class VerifyConfig {
         return map;
     }
 
-    public void ensureDefaults() {
-        if (apiUrl == null) apiUrl = "http://www.example.com/api/verify/minecraft";
-        if (apiKey == null) apiKey = "";
+    public boolean ensureDefaults() {
+        boolean modified = false;
+        if (apiUrl == null) {
+            apiUrl = DEFAULT_API_URL;
+            modified = true;
+        }
+        if (apiKey == null) {
+            apiKey = DEFAULT_API_KEY;
+            modified = true;
+        }
+
+        if (verificationIntervalMinutes == null) {
+            verificationIntervalMinutes = DEFAULT_VERIFICATION_INTERVAL_MINUTES;
+            modified = true;
+        }
+        if (maxTimeoutStrikes == null) {
+            maxTimeoutStrikes = DEFAULT_MAX_TIMEOUT_STRIKES;
+            modified = true;
+        }
+        if (uuidAttemptLimit == null) {
+            uuidAttemptLimit = DEFAULT_UUID_ATTEMPT_LIMIT;
+            modified = true;
+        }
+        if (ipAttemptLimit == null) {
+            ipAttemptLimit = DEFAULT_IP_ATTEMPT_LIMIT;
+            modified = true;
+        }
+        if (cooldownMinutes == null) {
+            cooldownMinutes = DEFAULT_COOLDOWN_MINUTES;
+            modified = true;
+        }
+        if (attemptExpiryMinutes == null) {
+            attemptExpiryMinutes = DEFAULT_ATTEMPT_EXPIRY_MINUTES;
+            modified = true;
+        }
+        if (apiTimeoutSeconds == null) {
+            apiTimeoutSeconds = DEFAULT_API_TIMEOUT_SECONDS;
+            modified = true;
+        }
+
         if (apiResponses == null) {
             apiResponses = createDefaultApiResponses();
+            modified = true;
         } else {
-            createDefaultApiResponses().forEach(apiResponses::putIfAbsent);
+            Map<String, String> defaults = createDefaultApiResponses();
+            for (Map.Entry<String, String> entry : defaults.entrySet()) {
+                if (apiResponses.putIfAbsent(entry.getKey(), entry.getValue()) == null) {
+                    modified = true;
+                }
+            }
         }
+        return modified;
     }
 
     public String getApiUrl() { return apiUrl; }
@@ -57,8 +117,11 @@ public class VerifyConfig {
 
     public static VerifyConfig load(Path path, Gson gson) throws IOException {
         VerifyConfig config;
+        boolean modified;
         if (Files.notExists(path)) {
             config = new VerifyConfig();
+            config.ensureDefaults();
+            modified = true;
         } else {
             try (Reader reader = Files.newBufferedReader(path)) {
                 config = gson.fromJson(reader, VerifyConfig.class);
@@ -67,11 +130,15 @@ public class VerifyConfig {
             }
             if (config == null) {
                 config = new VerifyConfig();
-            } else {
                 config.ensureDefaults();
+                modified = true;
+            } else {
+                modified = config.ensureDefaults();
             }
         }
-        save(path, config, gson);
+        if (modified) {
+            save(path, config, gson);
+        }
         return config;
     }
 
