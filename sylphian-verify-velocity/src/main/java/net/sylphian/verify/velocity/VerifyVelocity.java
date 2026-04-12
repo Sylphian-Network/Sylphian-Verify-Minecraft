@@ -16,7 +16,7 @@ import net.sylphian.verify.common.VerificationResult;
 import net.sylphian.verify.common.VerifyConfig;
 import net.sylphian.verify.common.VerifyManager;
 import org.slf4j.Logger;
-
+ 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.UUID;
@@ -42,7 +42,9 @@ public class VerifyVelocity {
         this.proxy = proxy;
         this.logger = logger;
         this.dataDirectory = dataDirectory;
-        this.gson = new GsonBuilder().setPrettyPrinting().create();
+        this.gson = new GsonBuilder()
+                .setPrettyPrinting()
+                .create();
     }
  
     @Subscribe
@@ -51,7 +53,7 @@ public class VerifyVelocity {
             this.config = VerifyConfig.load(dataDirectory.resolve("config.json"), gson);
         } catch (IOException e) {
             logger.error("Could not load config, using defaults", e);
-            this.config = new VerifyConfig();
+            this.config = VerifyConfig.createDefault();
         }
 
         this.verifyManager = new VerifyManager(config);

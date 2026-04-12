@@ -25,14 +25,16 @@ public final class VerifyPaper extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
-        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        Gson gson = new GsonBuilder()
+                .setPrettyPrinting()
+                .create();
         Path dataDirectory = getDataFolder().toPath();
 
         try {
             this.config = VerifyConfig.load(dataDirectory.resolve("config.json"), gson);
         } catch (IOException e) {
             getLogger().log(Level.SEVERE, "Could not load config, using defaults", e);
-            this.config = new VerifyConfig();
+            this.config = VerifyConfig.createDefault();
         }
 
         this.verifyManager = new VerifyManager(config);
