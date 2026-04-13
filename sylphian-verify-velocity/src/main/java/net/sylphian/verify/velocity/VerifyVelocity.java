@@ -3,18 +3,18 @@ package net.sylphian.verify.velocity;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.inject.Inject;
-import com.velocitypowered.api.event.EventTask;
 import com.velocitypowered.api.event.Subscribe;
-import com.velocitypowered.api.event.connection.DisconnectEvent;
-import com.velocitypowered.api.event.connection.LoginEvent;
-import com.velocitypowered.api.event.player.ServerPostConnectEvent;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
 import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
-import net.sylphian.verify.common.*;
+import net.sylphian.verify.common.MessageUtils;
+import net.sylphian.verify.common.PlayerIdentity;
+import net.sylphian.verify.common.VerifyConfig;
+import net.sylphian.verify.common.VerifyManager;
+import net.sylphian.verify.velocity.listener.PlayerListener;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -64,6 +64,7 @@ public class VerifyVelocity {
         this.verifyManager = new VerifyManager(config);
 
         proxy.getChannelRegistrar().register(IDENTIFIER);
+        proxy.getEventManager().register(this, new PlayerListener(this, verifiedPlayers));
 
         startVerificationTask();
 
@@ -122,47 +123,23 @@ public class VerifyVelocity {
                 .schedule();
     }
 
-    @Subscribe
-    public EventTask onLogin(LoginEvent event) {
-        Player player = event.getPlayer();
-        UUID uuid = player.getUniqueId();
-        String ip = player.getRemoteAddress().getAddress().getHostAddress();
 
-        return EventTask.async(() -> {
-            try {
-                VerificationResult result = verifyManager.checkPlayer(uuid, ip).join();
-                if (!result.isAllowed()) {
-                    event.setResult(LoginEvent.ComponentResult.denied(result.getKickMessage()));
-                } else {
-                    verifiedPlayers.put(uuid, result.getIdentity());
-                }
-            } catch (Exception e) {
-                logger.error("Error checking verification for {}", player.getUsername(), e);
-                event.setResult(LoginEvent.ComponentResult.denied(MessageUtils.buildErrorMessage(config)));
-            }
-        });
-    }
-
-    @Subscribe
-    public void onDisconnect(DisconnectEvent event) {
-        UUID uuid = event.getPlayer().getUniqueId();
-        verifiedPlayers.remove(uuid);
-        verifyManager.resetTimeoutStrikes(uuid);
-    }
-
-    @Subscribe
-    public void onServerPostConnect(ServerPostConnectEvent event) {
-        Player player = event.getPlayer();
-        PlayerIdentity identity = verifiedPlayers.get(player.getUniqueId());
-        if (identity != null) {
-            sendVerificationData(player, identity);
-        }
-    }
-
-    private void sendVerificationData(Player player, PlayerIdentity identity) {
+    public void sendVerificationData(Player player, PlayerIdentity identity) {
         player.getCurrentServer().ifPresent(server -> {
             String json = gson.toJson(identity);
             server.sendPluginMessage(IDENTIFIER, json.getBytes(java.nio.charset.StandardCharsets.UTF_8));
         });
+    }
+
+    public VerifyManager getVerifyManager() {
+        return verifyManager;
+    }
+
+    public VerifyConfig getConfig() {
+        return config;
+    }
+
+    public Logger getLogger() {
+        return logger;
     }
 }

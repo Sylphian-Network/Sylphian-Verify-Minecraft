@@ -2,30 +2,57 @@ package net.sylphian.verify.paper;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import net.sylphian.verify.common.*;
+import net.sylphian.verify.common.MessageUtils;
+import net.sylphian.verify.common.PlayerIdentity;
+import net.sylphian.verify.common.VerifyConfig;
+import net.sylphian.verify.common.VerifyManager;
+import net.sylphian.verify.paper.listener.PlayerListener;
+import net.sylphian.verify.paper.listener.VerifyPluginMessageListener;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.plugin.messaging.PluginMessageListener;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
-public final class VerifyPaper extends JavaPlugin implements Listener, PluginMessageListener {
+public final class VerifyPaper extends JavaPlugin {
 
     private VerifyConfig config;
     private VerifyManager verifyManager;
     private Gson gson;
     private final Map<UUID, PlayerIdentity> verificationResponses = new ConcurrentHashMap<>();
+
+    public VerifyConfig getPluginConfig() {
+        return config;
+    }
+
+    public VerifyManager getVerifyManager() {
+        return verifyManager;
+    }
+
+    public Gson getGson() {
+        return gson;
+    }
+
+    public void cacheIdentity(UUID uuid, PlayerIdentity identity) {
+        verificationResponses.put(uuid, identity);
+    }
+
+    public void removeIdentity(UUID uuid) {
+        verificationResponses.remove(uuid);
+    }
+
+    public boolean isCached(UUID uuid) {
+        return verificationResponses.containsKey(uuid);
+    }
+
+    public PlayerIdentity getIdentity(UUID uuid) {
+        return verificationResponses.get(uuid);
+    }
 
     @Override
     public void onEnable() {
@@ -45,10 +72,10 @@ public final class VerifyPaper extends JavaPlugin implements Listener, PluginMes
             this.verifyManager = new VerifyManager(config);
         }
 
-        getServer().getPluginManager().registerEvents(this, this);
+        getServer().getPluginManager().registerEvents(new PlayerListener(this), this);
 
         if (config.isProxyMode()) {
-            getServer().getMessenger().registerIncomingPluginChannel(this, "sylphian:verify", this);
+            getServer().getMessenger().registerIncomingPluginChannel(this, "sylphian:verify", new VerifyPluginMessageListener(this));
             getLogger().info("Proxy mode enabled, listening for verification data from Velocity");
         } else {
             startVerificationTask();
@@ -104,57 +131,5 @@ public final class VerifyPaper extends JavaPlugin implements Listener, PluginMes
                         });
             }
         }, 0L, intervalTicks);
-    }
-
-    @EventHandler
-    public void onAsyncPlayerPreLogin(AsyncPlayerPreLoginEvent event) {
-        if (config.isProxyMode()) {
-            return;
-        }
-        UUID uuid = event.getUniqueId();
-        String ip = event.getAddress().getHostAddress();
-
-        try {
-            VerificationResult result = verifyManager.checkPlayer(uuid, ip).join();
-            if (!result.isAllowed()) {
-                event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_BANNED, result.getKickMessage());
-            } else {
-                verificationResponses.put(uuid, result.getIdentity());
-            }
-        } catch (Exception e) {
-            getLogger().log(Level.SEVERE, "Error checking verification for " + event.getName(), e);
-            event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, MessageUtils.buildErrorMessage(config));
-        }
-    }
-
-    @EventHandler
-    public void onPlayerQuit(PlayerQuitEvent event) {
-        UUID uuid = event.getPlayer().getUniqueId();
-        verificationResponses.remove(uuid);
-        if (verifyManager != null) {
-            verifyManager.resetTimeoutStrikes(uuid);
-        }
-    }
-
-    @Override
-    public void onPluginMessageReceived(String channel, Player player, byte[] message) {
-        if (!channel.equals("sylphian:verify")) {
-            return;
-        }
-
-        try {
-            String json = new String(message, StandardCharsets.UTF_8);
-            PlayerIdentity identity = gson.fromJson(json, PlayerIdentity.class);
-
-            if (identity != null) {
-                verificationResponses.put(player.getUniqueId(), identity);
-
-                getLogger().info("Received verification data for " + player.getName() + ": " + identity.forumUsername());
-                // Inform player that they have been verified
-                player.sendMessage(MessageUtils.buildVerificationMessage(identity));
-            }
-        } catch (Exception e) {
-            getLogger().log(Level.SEVERE, "Error processing plugin message from Velocity", e);
-        }
     }
 }
