@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import net.sylphian.verify.api.model.ApiEnvelope;
 import net.sylphian.verify.api.model.VerificationResponse;
- 
+
 import java.lang.reflect.Type;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -13,7 +13,7 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
- 
+
 public class VerifyClient implements VerifyService {
     private final String apiUrl;
     private final String apiKey;
@@ -52,12 +52,19 @@ public class VerifyClient implements VerifyService {
                     if (code == 200 || code == 400 || code == 403 || code == 404) {
                         try {
                             ApiEnvelope<VerificationResponse> envelope = gson.fromJson(body, responseType);
-                            if (envelope == null) throw new RuntimeException("API returned an empty body");
+                            if (envelope == null) throw new RuntimeException("API returned an empty response body");
 
                             if (envelope.isSuccess()) {
-                                return envelope.getData();
+                                VerificationResponse data = envelope.getData();
+                                if (data == null) {
+                                    return new VerificationResponse(false, "API returned success but no verification data");
+                                }
+                                if (data.getAllowed() == null) {
+                                    data.setAllowed(true);
+                                }
+                                return data;
                             } else {
-                                return new VerificationResponse(false, envelope.getMessage());
+                                return new VerificationResponse(false, envelope.getMessage() != null ? envelope.getMessage() : "API reported failure without message");
                             }
                         } catch (com.google.gson.JsonSyntaxException e) {
                             System.err.println("[Verify] Failed to parse API response. Status: " + code);

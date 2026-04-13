@@ -57,4 +57,11 @@ public class MessageUtils {
         String displayReason = config.getApiResponses().getOrDefault(rawReason, "Your account is no longer verified. This could be because your account is no longer linked or an API error occurred. Please ensure your account is linked and check our website for status updates.");
         return Component.text(displayReason, NamedTextColor.RED, TextDecoration.BOLD);
     }
+
+    public static Component buildVerificationMessage(PlayerIdentity identity) {
+        return Component.text("Verification successful! ", NamedTextColor.GREEN)
+                .append(Component.text("Connected as ", NamedTextColor.GRAY))
+                .append(Component.text(identity.forumUsername(), NamedTextColor.AQUA, TextDecoration.BOLD))
+                .append(Component.text(".", NamedTextColor.GRAY));
+    }
 }

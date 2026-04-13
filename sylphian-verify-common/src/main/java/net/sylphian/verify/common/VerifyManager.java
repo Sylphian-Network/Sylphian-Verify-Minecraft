@@ -2,6 +2,7 @@ package net.sylphian.verify.common;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+
 import net.sylphian.verify.api.VerifyClient;
 
 import java.util.Map;
@@ -56,11 +57,12 @@ public class VerifyManager {
 
         return client.checkVerification(uuid)
                 .thenApply(response -> {
+                    PlayerIdentity identity = PlayerIdentity.from(response, uuid);
                     if (!response.isAllowed()) {
                         handleFailedAttempt(uuid, ip);
-                        return VerificationResult.denied(MessageUtils.buildKickMessage(response, config), response);
+                        return VerificationResult.denied(MessageUtils.buildKickMessage(response, config), identity);
                     }
-                    return VerificationResult.allowed();
+                    return VerificationResult.allowed(identity);
                 });
     }
 
@@ -84,6 +86,14 @@ public class VerifyManager {
         } else {
             ipAttempts.put(ip, iAttempts);
         }
+    }
+
+    public int incrementTimeoutStrike(UUID uuid) {
+        return timeoutStrikes.compute(uuid, (k, v) -> v == null ? 1 : v + 1);
+    }
+
+    public void resetTimeoutStrikes(UUID uuid) {
+        timeoutStrikes.remove(uuid);
     }
 
     public Map<UUID, Integer> getTimeoutStrikes() {

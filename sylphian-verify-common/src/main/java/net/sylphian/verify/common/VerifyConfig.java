@@ -20,6 +20,7 @@ public class VerifyConfig {
     private static final int DEFAULT_COOLDOWN_MINUTES = 10;
     private static final int DEFAULT_ATTEMPT_EXPIRY_MINUTES = 5;
     private static final int DEFAULT_API_TIMEOUT_SECONDS = 10;
+    private static final boolean DEFAULT_PROXY_MODE = false;
 
     /**
      * Base URL for the XenForo/Verification API.
@@ -66,6 +67,13 @@ public class VerifyConfig {
      * Timeout for API requests in seconds.
      */
     private Integer apiTimeoutSeconds;
+
+    /**
+     * Whether the plugin is running in a proxy network (Velocity + Paper).
+     * If true, the Paper plugin will listen for verification data from Velocity instead of calling the API directly.
+     * On Velocity, this should be false as it will always call the API.
+     */
+    private Boolean proxyMode;
 
     /**
      * Customizable kick messages for various API response reasons.
@@ -128,6 +136,10 @@ public class VerifyConfig {
             apiTimeoutSeconds = DEFAULT_API_TIMEOUT_SECONDS;
             modified = true;
         }
+        if (proxyMode == null) {
+            proxyMode = DEFAULT_PROXY_MODE;
+            modified = true;
+        }
 
         if (apiResponses == null) {
             apiResponses = createDefaultApiResponses();
@@ -152,6 +164,7 @@ public class VerifyConfig {
     public int getCooldownMinutes() { return cooldownMinutes; }
     public int getAttemptExpiryMinutes() { return attemptExpiryMinutes; }
     public int getApiTimeoutSeconds() { return apiTimeoutSeconds; }
+    public boolean isProxyMode() { return proxyMode; }
     public Map<String, String> getApiResponses() { return apiResponses; }
 
     public static VerifyConfig load(Path path, Gson gson) throws IOException {
