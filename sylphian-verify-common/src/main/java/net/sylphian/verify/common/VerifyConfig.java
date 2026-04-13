@@ -21,17 +21,56 @@ public class VerifyConfig {
     private static final int DEFAULT_ATTEMPT_EXPIRY_MINUTES = 5;
     private static final int DEFAULT_API_TIMEOUT_SECONDS = 10;
 
+    /**
+     * Base URL for the XenForo/Verification API.
+     */
     private String apiUrl;
+
+    /**
+     * API Key for authorization with the XenForo/Verification API.
+     */
     private String apiKey;
 
+    /**
+     * Frequency of re-verification checks for online players in minutes.
+     * Set to 0 to disable periodic checks.
+     */
     private Integer verificationIntervalMinutes;
+
+    /**
+     * Number of consecutive API timeouts before a player is disconnected.
+     */
     private Integer maxTimeoutStrikes;
+
+    /**
+     * Maximum number of failed verification attempts by UUID before a cooldown is triggered.
+     */
     private Integer uuidAttemptLimit;
+
+    /**
+     * Maximum number of failed verification attempts by IP address before a cooldown is triggered.
+     */
     private Integer ipAttemptLimit;
+
+    /**
+     * Duration of the brute-force cooldown in minutes.
+     */
     private Integer cooldownMinutes;
+
+    /**
+     * Duration before a single failed attempt strike expires in minutes.
+     */
     private Integer attemptExpiryMinutes;
+
+    /**
+     * Timeout for API requests in seconds.
+     */
     private Integer apiTimeoutSeconds;
 
+    /**
+     * Customizable kick messages for various API response reasons.
+     * Key is the raw reason from the API, value is the message displayed to the player.
+     */
     private Map<String, String> apiResponses;
 
     public static VerifyConfig createDefault() {
