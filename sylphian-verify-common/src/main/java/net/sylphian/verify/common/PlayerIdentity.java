@@ -12,10 +12,9 @@ public record PlayerIdentity(UUID uuid, String forumUsername) {
     public static final String CHANNEL = "sylphian:verify";
 
     public static PlayerIdentity from(VerificationResponse response, UUID uuid) {
-        String normalizedUsername = response.getForumUsername() != null ? response.getForumUsername().toLowerCase() : null;
         return new PlayerIdentity(
                 uuid,
-                normalizedUsername
+                response.getForumUsername()
         );
     }
 }
