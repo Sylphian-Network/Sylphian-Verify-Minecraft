@@ -18,7 +18,7 @@ public class VerifyPluginMessageListener implements PluginMessageListener {
 
     @Override
     public void onPluginMessageReceived(String channel, Player player, byte[] message) {
-        if (!channel.equals("sylphian:verify")) {
+        if (!channel.equals(PlayerIdentity.CHANNEL)) {
             return;
         }
 

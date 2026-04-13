@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
         authors = {"QuackieMackie"}
 )
 public class VerifyVelocity {
-    public static final MinecraftChannelIdentifier IDENTIFIER = MinecraftChannelIdentifier.from("sylphian:verify");
+    public static final MinecraftChannelIdentifier IDENTIFIER = MinecraftChannelIdentifier.from(PlayerIdentity.CHANNEL);
 
     private final ProxyServer proxy;
     private final Logger logger;

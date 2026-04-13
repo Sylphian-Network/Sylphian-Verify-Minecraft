@@ -9,6 +9,7 @@ import java.util.UUID;
  * Derived from raw API data (VerificationResponse).
  */
 public record PlayerIdentity(UUID uuid, String forumUsername) {
+    public static final String CHANNEL = "sylphian:verify";
 
     public static PlayerIdentity from(VerificationResponse response, UUID uuid) {
         String normalizedUsername = response.getForumUsername() != null ? response.getForumUsername().toLowerCase() : null;

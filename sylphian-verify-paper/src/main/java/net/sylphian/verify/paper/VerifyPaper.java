@@ -75,7 +75,7 @@ public final class VerifyPaper extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new PlayerListener(this), this);
 
         if (config.isProxyMode()) {
-            getServer().getMessenger().registerIncomingPluginChannel(this, "sylphian:verify", new VerifyPluginMessageListener(this));
+            getServer().getMessenger().registerIncomingPluginChannel(this, PlayerIdentity.CHANNEL, new VerifyPluginMessageListener(this));
             getLogger().info("Proxy mode enabled, listening for verification data from Velocity");
         } else {
             startVerificationTask();
