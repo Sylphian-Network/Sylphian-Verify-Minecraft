@@ -145,7 +145,9 @@ public class VerifyVelocity {
 
     @Subscribe
     public void onDisconnect(DisconnectEvent event) {
-        verifiedPlayers.remove(event.getPlayer().getUniqueId());
+        UUID uuid = event.getPlayer().getUniqueId();
+        verifiedPlayers.remove(uuid);
+        verifyManager.resetTimeoutStrikes(uuid);
     }
 
     @Subscribe

@@ -41,7 +41,9 @@ public final class VerifyPaper extends JavaPlugin implements Listener, PluginMes
             this.config = VerifyConfig.createDefault();
         }
 
-        this.verifyManager = new VerifyManager(config);
+        if (!config.isProxyMode()) {
+            this.verifyManager = new VerifyManager(config);
+        }
 
         getServer().getPluginManager().registerEvents(this, this);
 
@@ -127,7 +129,11 @@ public final class VerifyPaper extends JavaPlugin implements Listener, PluginMes
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
-        verificationResponses.remove(event.getPlayer().getUniqueId());
+        UUID uuid = event.getPlayer().getUniqueId();
+        verificationResponses.remove(uuid);
+        if (verifyManager != null) {
+            verifyManager.resetTimeoutStrikes(uuid);
+        }
     }
 
     @Override
