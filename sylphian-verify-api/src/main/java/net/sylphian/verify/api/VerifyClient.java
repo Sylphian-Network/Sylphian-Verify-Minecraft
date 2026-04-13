@@ -60,7 +60,7 @@ public class VerifyClient implements VerifyService {
                                     return new VerificationResponse(false, "API returned success but no verification data");
                                 }
                                 if (data.getAllowed() == null) {
-                                    data.setAllowed(true);
+                                    data.setAllowed(false);
                                 }
                                 return data;
                             } else {
