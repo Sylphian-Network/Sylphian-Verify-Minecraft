@@ -1,8 +1,7 @@
-package net.sylphian.verify.common;
+package net.sylphian.verify.api;
  
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import net.sylphian.verify.api.VerifyService;
 import net.sylphian.verify.api.model.ApiEnvelope;
 import net.sylphian.verify.api.model.VerificationResponse;
  

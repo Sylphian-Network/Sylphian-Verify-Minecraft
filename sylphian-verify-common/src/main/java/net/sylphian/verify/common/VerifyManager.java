@@ -2,6 +2,7 @@ package net.sylphian.verify.common;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import net.sylphian.verify.api.VerifyClient;
 
 import java.util.Map;
 import java.util.UUID;
