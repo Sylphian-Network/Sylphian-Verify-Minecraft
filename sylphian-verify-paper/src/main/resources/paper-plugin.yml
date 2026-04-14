@@ -4,7 +4,7 @@ version: '$version'
 
 main: net.sylphian.verify.paper.VerifyPaper
 api-version: '1.21.11'
-load: STARTUP
+load: POSTWORLD
 
 authors: [QuackieMackie]
 website: https://sylphian.net

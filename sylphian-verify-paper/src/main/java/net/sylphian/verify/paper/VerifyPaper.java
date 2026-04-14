@@ -8,9 +8,11 @@ import net.sylphian.verify.common.VerifyConfig;
 import net.sylphian.verify.common.VerifyManager;
 import net.sylphian.verify.paper.listener.PlayerListener;
 import net.sylphian.verify.paper.listener.VerifyPluginMessageListener;
+import net.sylphian.verify.paper.util.VisualManager;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scoreboard.Scoreboard;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -24,7 +26,25 @@ public final class VerifyPaper extends JavaPlugin {
     private VerifyConfig config;
     private VerifyManager verifyManager;
     private Gson gson;
+    private Scoreboard scoreboard;
     private final Map<UUID, PlayerIdentity> verificationResponses = new ConcurrentHashMap<>();
+    private PlayerListener playerListener;
+    private VisualManager visualManager;
+
+    public PlayerListener getPlayerListener() {
+        return playerListener;
+    }
+
+    public VisualManager getVisualManager() {
+        return visualManager;
+    }
+
+    public Scoreboard getPlayerNamesScoreboard() {
+        if (scoreboard == null) {
+            scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
+        }
+        return scoreboard;
+    }
 
     public VerifyConfig getPluginConfig() {
         return config;
@@ -40,6 +60,11 @@ public final class VerifyPaper extends JavaPlugin {
 
     public void cacheIdentity(UUID uuid, PlayerIdentity identity) {
         verificationResponses.put(uuid, identity);
+
+        Player player = Bukkit.getPlayer(uuid);
+        if (player != null && player.isOnline() && visualManager != null) {
+            Bukkit.getScheduler().runTask(this, () -> visualManager.updateVisuals(player, identity));
+        }
     }
 
     public void removeIdentity(UUID uuid) {
@@ -59,6 +84,13 @@ public final class VerifyPaper extends JavaPlugin {
         this.gson = new GsonBuilder()
                 .setPrettyPrinting()
                 .create();
+
+        Bukkit.getScoreboardManager();
+        this.scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            player.setScoreboard(this.scoreboard);
+        }
+
         Path dataDirectory = getDataFolder().toPath();
 
         try {
@@ -72,7 +104,9 @@ public final class VerifyPaper extends JavaPlugin {
             this.verifyManager = new VerifyManager(config);
         }
 
-        getServer().getPluginManager().registerEvents(new PlayerListener(this), this);
+        this.visualManager = new VisualManager(this);
+        this.playerListener = new PlayerListener(this);
+        getServer().getPluginManager().registerEvents(playerListener, this);
 
         if (config.isProxyMode()) {
             getServer().getMessenger().registerIncomingPluginChannel(this, PlayerIdentity.CHANNEL, new VerifyPluginMessageListener(this));
@@ -110,7 +144,7 @@ public final class VerifyPaper extends JavaPlugin {
                                 );
                             } else {
                                 getLogger().info("Player " + playerName + " (" + uuid + ") re-verified successfully");
-                                verificationResponses.put(uuid, PlayerIdentity.from(response, uuid));
+                                cacheIdentity(uuid, PlayerIdentity.from(response, uuid));
                             }
                         })
                         .exceptionally(ex -> {
