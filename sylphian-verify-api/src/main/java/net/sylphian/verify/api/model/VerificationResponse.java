@@ -7,6 +7,8 @@ public class VerificationResponse {
     private Boolean allowed;
     private String reason;
     private String passcode;
+    @SerializedName("forum_user_id")
+    private int forumUserId;
     @SerializedName("forum_username")
     private String forumUsername;
     @SerializedName("minecraft_username")
@@ -42,6 +44,10 @@ public class VerificationResponse {
 
     public String getPasscode() {
         return passcode;
+    }
+
+    public int getForumUserId() {
+        return forumUserId;
     }
 
     public String getForumUsername() {

@@ -21,6 +21,7 @@ public class VerifyConfig {
     private static final int DEFAULT_ATTEMPT_EXPIRY_MINUTES = 5;
     private static final int DEFAULT_API_TIMEOUT_SECONDS = 10;
     private static final boolean DEFAULT_PROXY_MODE = false;
+    private static final String DEFAULT_FORUM_BASE_URL = "https://example.com/community";
 
     /**
      * Base URL for the XenForo/Verification API.
@@ -74,6 +75,11 @@ public class VerifyConfig {
      * On Velocity, this should be false as it will always call the API.
      */
     private Boolean proxyMode;
+
+    /**
+     * Base URL for the community/forum for profile links.
+     */
+    private String forumBaseUrl;
 
     /**
      * Customizable kick messages for various API response reasons.
@@ -141,6 +147,11 @@ public class VerifyConfig {
             modified = true;
         }
 
+        if (forumBaseUrl == null) {
+            forumBaseUrl = DEFAULT_FORUM_BASE_URL;
+            modified = true;
+        }
+
         if (apiResponses == null) {
             apiResponses = createDefaultApiResponses();
             modified = true;
@@ -165,6 +176,7 @@ public class VerifyConfig {
     public int getAttemptExpiryMinutes() { return attemptExpiryMinutes; }
     public int getApiTimeoutSeconds() { return apiTimeoutSeconds; }
     public boolean isProxyMode() { return proxyMode; }
+    public String getForumBaseUrl() { return forumBaseUrl; }
     public Map<String, String> getApiResponses() { return apiResponses; }
 
     public static VerifyConfig load(Path path, Gson gson) throws IOException {
