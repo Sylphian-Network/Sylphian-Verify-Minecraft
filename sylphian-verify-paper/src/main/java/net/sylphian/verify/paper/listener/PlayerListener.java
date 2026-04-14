@@ -2,6 +2,8 @@ package net.sylphian.verify.paper.listener;
 
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.sylphian.verify.common.MessageUtils;
 import net.sylphian.verify.common.PlayerIdentity;
 import net.sylphian.verify.common.VerificationResult;
@@ -57,15 +59,26 @@ public class PlayerListener implements Listener {
         Player player = event.getPlayer();
         PlayerIdentity playerIdentity = plugin.getIdentity(player.getUniqueId());
 
-        if (playerIdentity == null) {
-            return;
-        }
+        if (playerIdentity == null) return;
 
+        String forumBase = plugin.getPluginConfig().getForumBaseUrl();
         String forumName = playerIdentity.forumUsername();
+        int forumUserId = playerIdentity.forumUserId();
 
-        event.renderer(((source, sourceDisplayName, message, viewer) -> {
-            Component displayName = Component.text(forumName);
-            return displayName.append(Component.text(": ")).append(message);
-        }));
+        String profileUrl = forumBase + "/members/" + forumName + "." + forumUserId;
+
+        Component nameComponent = Component.text(forumName)
+                .color(NamedTextColor.DARK_GREEN)
+                .hoverEvent(Component.text("View " + forumName + "'s forum profile"))
+                .clickEvent(ClickEvent.openUrl(profileUrl));
+
+        Component separator = Component.text(" » ", NamedTextColor.DARK_GRAY);
+
+        event.renderer((source, sourceDisplayName, message, viewer) ->
+                Component.empty()
+                        .append(nameComponent)
+                        .append(separator)
+                        .append(message.color(NamedTextColor.WHITE))
+        );
     }
 }
