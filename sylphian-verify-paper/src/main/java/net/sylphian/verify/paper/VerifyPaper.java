@@ -2,7 +2,6 @@ package net.sylphian.verify.paper;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import net.sylphian.verify.common.MessageUtils;
 import net.sylphian.verify.common.PlayerIdentity;
 import net.sylphian.verify.common.VerifyConfig;
 import net.sylphian.verify.common.VerifyManager;
@@ -115,7 +114,7 @@ public final class VerifyPaper extends JavaPlugin {
             startVerificationTask();
         }
 
-        getLogger().info("Plugin initialized successfully");
+        getLogger().info("Plugin initialised successfully");
     }
 
     private void startVerificationTask() {
@@ -128,40 +127,31 @@ public final class VerifyPaper extends JavaPlugin {
         getLogger().info("Scheduling verification task to run every " + config.getVerificationIntervalMinutes() + " minutes");
 
         Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
+            int playerCount = Bukkit.getOnlinePlayers().size();
+            if (playerCount > 0) {
+                getLogger().info("Starting periodic verification check for " + playerCount + " players");
+            }
+
             for (Player player : Bukkit.getOnlinePlayers()) {
                 UUID uuid = player.getUniqueId();
                 String playerName = player.getName();
 
-                verifyManager.getClient().checkVerification(uuid)
-                        .thenAccept(response -> {
-                            verifyManager.resetTimeoutStrikes(uuid);
-
-                            if (!response.isAllowed()) {
-                                getLogger().info("Player " + playerName + " (" + uuid + ") verification failed: " + response.getReason());
-
+                verifyManager.checkPeriodic(uuid)
+                        .thenAccept(result -> {
+                            if (!result.isAllowed()) {
+                                getLogger().warning("Player " + playerName + " (" + uuid + ") failed periodic verification. Disconnecting.");
                                 Bukkit.getScheduler().runTask(this, () ->
-                                        player.kick(MessageUtils.buildReverificationFailureMessage(config))
+                                        player.kick(result.getKickMessage())
                                 );
                             } else {
-                                getLogger().info("Player " + playerName + " (" + uuid + ") re-verified successfully");
-                                cacheIdentity(uuid, PlayerIdentity.from(response, uuid));
+                                int strikes = verifyManager.getStrikeCount(uuid);
+                                if (strikes > 0) {
+                                    getLogger().warning("Player " + playerName + " (" + uuid + ") has " + strikes + "/" + config.getMaxStrikes() + " strikes");
+                                } else if (result.getIdentity() != null) {
+                                    getLogger().log(Level.FINE, "Player " + playerName + " (" + uuid + ") re-verified successfully");
+                                    cacheIdentity(uuid, result.getIdentity());
+                                }
                             }
-                        })
-                        .exceptionally(ex -> {
-                            int strikes = verifyManager.incrementTimeoutStrike(uuid);
-
-                            getLogger().warning("Verification API exception for player " + playerName +
-                                    " (" + uuid + "), strike " + strikes + "/" + config.getMaxTimeoutStrikes());
-
-                            if (strikes >= config.getMaxTimeoutStrikes()) {
-                                Bukkit.getScheduler().runTask(this, () ->
-                                        player.kick(MessageUtils.buildReverificationFailureMessage(config))
-                                );
-                                verifyManager.resetTimeoutStrikes(uuid);
-                                getLogger().warning("Player " + playerName + " (" + uuid + ") disconnected due to repeated API timeouts");
-                            }
-
-                            return null;
                         });
             }
         }, 0L, intervalTicks);

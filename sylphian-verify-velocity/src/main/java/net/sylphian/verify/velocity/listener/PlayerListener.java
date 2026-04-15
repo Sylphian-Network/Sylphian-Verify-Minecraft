@@ -49,7 +49,7 @@ public class PlayerListener {
     public void onDisconnect(DisconnectEvent event) {
         UUID uuid = event.getPlayer().getUniqueId();
         verifiedPlayers.remove(uuid);
-        plugin.getVerifyManager().resetTimeoutStrikes(uuid);
+        plugin.getVerifyManager().resetStrikes(uuid);
     }
 
     @Subscribe

@@ -10,7 +10,6 @@ import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
-import net.sylphian.verify.common.MessageUtils;
 import net.sylphian.verify.common.PlayerIdentity;
 import net.sylphian.verify.common.VerifyConfig;
 import net.sylphian.verify.common.VerifyManager;
@@ -87,34 +86,22 @@ public class VerifyVelocity {
                     for (Player player : proxy.getAllPlayers()) {
                         UUID uuid = player.getUniqueId();
 
-                        verifyManager.getClient().checkVerification(uuid)
-                                .thenAccept(response -> {
-                                    verifyManager.resetTimeoutStrikes(uuid);
-
-                                    if (!response.isAllowed()) {
-                                        logger.info("Player {} ({}) verification failed: {}", player.getUsername(), uuid, response.getReason());
+                        verifyManager.checkPeriodic(uuid)
+                                .thenAccept(result -> {
+                                    if (!result.isAllowed()) {
+                                        logger.warn("Player {} ({}) failed periodic verification. Disconnecting.", player.getUsername(), uuid);
                                         verifiedPlayers.remove(uuid);
-                                        player.disconnect(MessageUtils.buildReverificationFailureMessage(config));
+                                        player.disconnect(result.getKickMessage());
                                     } else {
-                                        logger.debug("Player {} ({}) re-verified successfully", player.getUsername(), uuid);
-                                        PlayerIdentity identity = PlayerIdentity.from(response, uuid);
-                                        verifiedPlayers.put(uuid, identity);
-                                        sendVerificationData(player, identity);
+                                        int strikes = verifyManager.getStrikeCount(uuid);
+                                        if (strikes > 0) {
+                                            logger.warn("Player {} ({}) has {}/{} strikes", player.getUsername(), uuid, strikes, config.getMaxStrikes());
+                                        } else if (result.getIdentity() != null) {
+                                            logger.debug("Player {} ({}) re-verified successfully", player.getUsername(), uuid);
+                                            verifiedPlayers.put(uuid, result.getIdentity());
+                                            sendVerificationData(player, result.getIdentity());
+                                        }
                                     }
-                                })
-                                .exceptionally(ex -> {
-                                    int strikes = verifyManager.incrementTimeoutStrike(uuid);
-
-                                    logger.warn("Verification API exception for player {} ({}), strike {}/{}",
-                                            player.getUsername(), uuid, strikes, config.getMaxTimeoutStrikes());
-
-                                    if (strikes >= config.getMaxTimeoutStrikes()) {
-                                        player.disconnect(MessageUtils.buildReverificationFailureMessage(config));
-                                        verifyManager.resetTimeoutStrikes(uuid);
-                                        logger.warn("Player {} ({}) disconnected due to repeated API timeouts", player.getUsername(), uuid);
-                                    }
-
-                                    return null;
                                 });
                     }
                 })

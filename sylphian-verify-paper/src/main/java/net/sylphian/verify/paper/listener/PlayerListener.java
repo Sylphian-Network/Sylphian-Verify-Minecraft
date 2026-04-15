@@ -104,7 +104,7 @@ public class PlayerListener implements Listener {
         }
 
         if (plugin.getVerifyManager() != null) {
-            plugin.getVerifyManager().resetTimeoutStrikes(uuid);
+            plugin.getVerifyManager().resetStrikes(uuid);
         }
     }
 

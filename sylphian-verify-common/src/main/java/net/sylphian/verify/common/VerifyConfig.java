@@ -15,13 +15,14 @@ import java.util.Map;
 public class VerifyConfig {
     private static final String DEFAULT_API_KEY = "";
     private static final int DEFAULT_VERIFICATION_INTERVAL_MINUTES = 5;
-    private static final int DEFAULT_MAX_TIMEOUT_STRIKES = 3;
+    private static final int DEFAULT_MAX_STRIKES = 3;
     private static final int DEFAULT_UUID_ATTEMPT_LIMIT = 5;
     private static final int DEFAULT_IP_ATTEMPT_LIMIT = 10;
     private static final int DEFAULT_COOLDOWN_MINUTES = 10;
     private static final int DEFAULT_ATTEMPT_EXPIRY_MINUTES = 5;
     private static final int DEFAULT_API_TIMEOUT_SECONDS = 10;
     private static final boolean DEFAULT_PROXY_MODE = false;
+    private static final boolean DEFAULT_STRIKE_ON_API_FAILURE = true;
     private static final String DEFAULT_FORUM_BASE_URL = "https://example.com/community";
 
     private static final String API_PATH = "/api/verify/minecraft";
@@ -40,7 +41,7 @@ public class VerifyConfig {
     /**
      * Number of consecutive API timeouts before a player is disconnected.
      */
-    private Integer maxTimeoutStrikes;
+    private Integer maxStrikes;
 
     /**
      * Maximum number of failed verification attempts by UUID before a cooldown is triggered.
@@ -73,6 +74,11 @@ public class VerifyConfig {
      * On Velocity, this should be false as it will always call the API.
      */
     private Boolean proxyMode;
+
+    /**
+     * Whether to count API timeouts/failures as strikes during periodic verification.
+     */
+    private Boolean strikeOnApiFailure;
 
     /**
      * Base URL for the community/forum for profile links.
@@ -113,8 +119,12 @@ public class VerifyConfig {
             verificationIntervalMinutes = DEFAULT_VERIFICATION_INTERVAL_MINUTES;
             modified = true;
         }
-        if (maxTimeoutStrikes == null) {
-            maxTimeoutStrikes = DEFAULT_MAX_TIMEOUT_STRIKES;
+        if (maxStrikes == null) {
+            maxStrikes = DEFAULT_MAX_STRIKES;
+            modified = true;
+        }
+        if (strikeOnApiFailure == null) {
+            strikeOnApiFailure = DEFAULT_STRIKE_ON_API_FAILURE;
             modified = true;
         }
         if (uuidAttemptLimit == null) {
@@ -165,7 +175,8 @@ public class VerifyConfig {
     }
     public String getApiKey() { return apiKey; }
     public int getVerificationIntervalMinutes() { return verificationIntervalMinutes; }
-    public int getMaxTimeoutStrikes() { return maxTimeoutStrikes; }
+    public int getMaxStrikes() { return maxStrikes; }
+    public boolean isStrikeOnApiFailure() { return strikeOnApiFailure; }
     public int getUuidAttemptLimit() { return uuidAttemptLimit; }
     public int getIpAttemptLimit() { return ipAttemptLimit; }
     public int getCooldownMinutes() { return cooldownMinutes; }

@@ -20,7 +20,7 @@ public class VerifyManager {
     private final Cache<UUID, Long> uuidCooldown;
     private final Cache<String, Long> ipCooldown;
 
-    private final Map<UUID, Integer> timeoutStrikes = new ConcurrentHashMap<>();
+    private final Map<UUID, Integer> strikes = new ConcurrentHashMap<>();
 
     public VerifyManager(VerifyConfig config) {
         this.config = config;
@@ -88,16 +88,49 @@ public class VerifyManager {
         }
     }
 
-    public int incrementTimeoutStrike(UUID uuid) {
-        return timeoutStrikes.compute(uuid, (k, v) -> v == null ? 1 : v + 1);
+    public CompletableFuture<VerificationResult> checkPeriodic(UUID uuid) {
+        return client.checkVerification(uuid)
+                .handle((response, ex) -> {
+                    if (ex != null) {
+                        if (config.isStrikeOnApiFailure()) {
+                            int count = incrementStrike(uuid);
+                            if (count >= config.getMaxStrikes()) {
+                                resetStrikes(uuid);
+                                return VerificationResult.denied(MessageUtils.buildReverificationFailureMessage(config), null);
+                            }
+                        }
+                        return VerificationResult.allowed(null);
+                    }
+
+                    PlayerIdentity identity = PlayerIdentity.from(response, uuid);
+                    if (response.isAllowed()) {
+                        resetStrikes(uuid);
+                        return VerificationResult.allowed(identity);
+                    } else {
+                        int count = incrementStrike(uuid);
+                        if (count >= config.getMaxStrikes()) {
+                            resetStrikes(uuid);
+                            return VerificationResult.denied(MessageUtils.buildReverificationFailureMessage(config), identity);
+                        }
+                        return VerificationResult.allowed(identity);
+                    }
+                });
     }
 
-    public void resetTimeoutStrikes(UUID uuid) {
-        timeoutStrikes.remove(uuid);
+    public int incrementStrike(UUID uuid) {
+        return strikes.compute(uuid, (k, v) -> v == null ? 1 : v + 1);
     }
 
-    public Map<UUID, Integer> getTimeoutStrikes() {
-        return Map.copyOf(timeoutStrikes);
+    public void resetStrikes(UUID uuid) {
+        strikes.remove(uuid);
+    }
+
+    public int getStrikeCount(UUID uuid) {
+        return strikes.getOrDefault(uuid, 0);
+    }
+
+    public Map<UUID, Integer> getStrikes() {
+        return Map.copyOf(strikes);
     }
 
     public VerifyClient getClient() {
