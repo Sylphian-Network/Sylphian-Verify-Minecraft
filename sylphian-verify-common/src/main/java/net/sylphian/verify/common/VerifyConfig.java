@@ -1,6 +1,7 @@
 package net.sylphian.verify.common;
 
 import com.google.gson.Gson;
+import net.sylphian.verify.api.model.VerificationReason;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -80,9 +81,9 @@ public class VerifyConfig {
 
     /**
      * Customizable kick messages for various API response reasons.
-     * Key is the raw reason from the API, value is the message displayed to the player.
+     * Key is the reason identifier from the API, value is the message displayed to the player.
      */
-    private Map<String, String> apiResponses;
+    private Map<VerificationReason, String> apiResponses;
 
     public static VerifyConfig createDefault() {
         VerifyConfig config = new VerifyConfig();
@@ -90,13 +91,15 @@ public class VerifyConfig {
         return config;
     }
 
-    private static Map<String, String> createDefaultApiResponses() {
-        Map<String, String> map = new HashMap<>();
-        map.put("UUID not linked to any forum account", "Your account has not been added to the forum, please add your account before attempting to join again.");
-        map.put("Account not confirmed", "Your forum account is linked but not confirmed. Please use the passcode below.");
-        map.put("Brute Force Cooldown", "Too many failed attempts. Please try again in {time} minutes.");
-        map.put("Re-verification failed", "Your account is no longer verified. This could be because your account is no longer linked or an API error occurred. Please ensure your account is linked and check our website for status updates.");
-        map.put("Verification API Error", "An error occurred while checking the API.");
+    private static Map<VerificationReason, String> createDefaultApiResponses() {
+        Map<VerificationReason, String> map = new HashMap<>();
+        map.put(VerificationReason.UUID_NOT_LINKED, "Your account has not been added to the forum, please add your account before attempting to join again.");
+        map.put(VerificationReason.ACCOUNT_NOT_CONFIRMED, "Your forum account is linked but not confirmed. Please use the passcode below.");
+        map.put(VerificationReason.BRUTE_FORCE_BLOCKED, "Too many failed attempts. Please try again in {time} minutes.");
+        map.put(VerificationReason.RE_VERIFICATION_FAILED, "Your account is no longer verified. This could be because your account is no longer linked or an API error occurred. Please ensure your account is linked and check our website for status updates.");
+        map.put(VerificationReason.API_ERROR, "An error occurred while checking the API.");
+        map.put(VerificationReason.API_SUCCESS_NO_DATA, "API returned success but no verification data.");
+        map.put(VerificationReason.API_FAILURE_NO_MESSAGE, "API reported failure without message.");
         return map;
     }
 
@@ -147,8 +150,8 @@ public class VerifyConfig {
             apiResponses = createDefaultApiResponses();
             modified = true;
         } else {
-            Map<String, String> defaults = createDefaultApiResponses();
-            for (Map.Entry<String, String> entry : defaults.entrySet()) {
+            Map<VerificationReason, String> defaults = createDefaultApiResponses();
+            for (Map.Entry<VerificationReason, String> entry : defaults.entrySet()) {
                 if (apiResponses.putIfAbsent(entry.getKey(), entry.getValue()) == null) {
                     modified = true;
                 }
@@ -170,7 +173,7 @@ public class VerifyConfig {
     public int getApiTimeoutSeconds() { return apiTimeoutSeconds; }
     public boolean isProxyMode() { return proxyMode; }
     public String getForumBaseUrl() { return forumBaseUrl; }
-    public Map<String, String> getApiResponses() { return apiResponses; }
+    public Map<VerificationReason, String> getApiResponses() { return apiResponses; }
 
     public static VerifyConfig load(Path path, Gson gson) throws IOException {
         VerifyConfig config;

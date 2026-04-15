@@ -3,6 +3,7 @@ package net.sylphian.verify.api;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import net.sylphian.verify.api.model.ApiEnvelope;
+import net.sylphian.verify.api.model.VerificationReason;
 import net.sylphian.verify.api.model.VerificationResponse;
 
 import java.lang.reflect.Type;
@@ -57,14 +58,14 @@ public class VerifyClient implements VerifyService {
                             if (envelope.isSuccess()) {
                                 VerificationResponse data = envelope.getData();
                                 if (data == null) {
-                                    return new VerificationResponse(false, "API returned success but no verification data");
+                                    return new VerificationResponse(false, VerificationReason.API_SUCCESS_NO_DATA);
                                 }
                                 if (data.getAllowed() == null) {
                                     data.setAllowed(false);
                                 }
                                 return data;
                             } else {
-                                return new VerificationResponse(false, envelope.getMessage() != null ? envelope.getMessage() : "API reported failure without message");
+                                return new VerificationResponse(false, VerificationReason.API_FAILURE_NO_MESSAGE);
                             }
                         } catch (com.google.gson.JsonSyntaxException e) {
                             System.err.println("[Verify] Failed to parse API response. Status: " + code);

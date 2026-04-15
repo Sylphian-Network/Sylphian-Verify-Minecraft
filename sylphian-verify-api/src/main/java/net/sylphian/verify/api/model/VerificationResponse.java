@@ -5,7 +5,7 @@ import com.google.gson.annotations.SerializedName;
 public class VerificationResponse {
     @SerializedName("allowed")
     private Boolean allowed;
-    private String reason;
+    private VerificationReason reason;
     private String passcode;
     @SerializedName("forum_user_id")
     private int forumUserId;
@@ -21,7 +21,7 @@ public class VerificationResponse {
     public VerificationResponse() {
     }
 
-    public VerificationResponse(boolean allowed, String reason) {
+    public VerificationResponse(boolean allowed, VerificationReason reason) {
         this.allowed = allowed;
         this.reason = reason;
     }
@@ -38,7 +38,7 @@ public class VerificationResponse {
         this.allowed = allowed;
     }
 
-    public String getReason() {
+    public VerificationReason getReason() {
         return reason;
     }
 

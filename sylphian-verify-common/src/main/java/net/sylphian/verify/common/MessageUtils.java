@@ -3,17 +3,21 @@ package net.sylphian.verify.common;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.sylphian.verify.api.model.VerificationReason;
 import net.sylphian.verify.api.model.VerificationResponse;
 
 public class MessageUtils {
     public static Component buildKickMessage(VerificationResponse response, VerifyConfig config) {
-        String rawReason = response.getReason();
+        VerificationReason reason = response.getReason();
 
-        if (rawReason == null || rawReason.isEmpty()) {
-            rawReason = "Verification failed. Please ensure your account is linked.";
+        if (reason == null) {
+            reason = VerificationReason.ACCOUNT_NOT_CONFIRMED;
         }
 
-        String displayReason = config.getApiResponses().getOrDefault(rawReason, rawReason);
+        String displayReason = config.getApiResponses().get(reason);
+        if (displayReason == null) {
+            displayReason = "Verification failed: " + reason.name();
+        }
 
         Component message = Component.text(displayReason, NamedTextColor.RED, TextDecoration.BOLD);
 
@@ -36,8 +40,8 @@ public class MessageUtils {
 
         String timeLeft = String.format("%d:%02d", minutes, seconds);
 
-        String rawReason = "Brute Force Cooldown";
-        String displayReason = config.getApiResponses().getOrDefault(rawReason, "Too many failed attempts. Please try again in " + timeLeft + " minutes.");
+        VerificationReason reason = VerificationReason.BRUTE_FORCE_BLOCKED;
+        String displayReason = config.getApiResponses().getOrDefault(reason, "Too many failed attempts. Please try again in " + timeLeft + " minutes.");
 
         if (displayReason.contains("{time}")) {
             displayReason = displayReason.replace("{time}", timeLeft);
@@ -47,14 +51,14 @@ public class MessageUtils {
     }
 
     public static Component buildErrorMessage(VerifyConfig config) {
-        String rawReason = "Verification API Error";
-        String displayReason = config.getApiResponses().getOrDefault(rawReason, "An error occurred while verifying your account. Please try again later.");
+        VerificationReason reason = VerificationReason.API_ERROR;
+        String displayReason = config.getApiResponses().getOrDefault(reason, "An error occurred while verifying your account. Please try again later.");
         return Component.text(displayReason, NamedTextColor.RED);
     }
 
     public static Component buildReverificationFailureMessage(VerifyConfig config) {
-        String rawReason = "Re-verification failed";
-        String displayReason = config.getApiResponses().getOrDefault(rawReason, "Your account is no longer verified. This could be because your account is no longer linked or an API error occurred. Please ensure your account is linked and check our website for status updates.");
+        VerificationReason reason = VerificationReason.RE_VERIFICATION_FAILED;
+        String displayReason = config.getApiResponses().getOrDefault(reason, "Your account is no longer verified. This could be because your account is no longer linked or an API error occurred. Please ensure your account is linked and check our website for status updates.");
         return Component.text(displayReason, NamedTextColor.RED, TextDecoration.BOLD);
     }
 
