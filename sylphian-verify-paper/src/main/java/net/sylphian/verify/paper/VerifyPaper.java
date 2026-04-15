@@ -3,31 +3,94 @@ package net.sylphian.verify.paper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.sylphian.verify.common.MessageUtils;
-import net.sylphian.verify.common.VerificationResult;
+import net.sylphian.verify.common.PlayerIdentity;
 import net.sylphian.verify.common.VerifyConfig;
 import net.sylphian.verify.common.VerifyManager;
+import net.sylphian.verify.paper.listener.PlayerListener;
+import net.sylphian.verify.paper.listener.VerifyPluginMessageListener;
+import net.sylphian.verify.paper.util.VisualManager;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scoreboard.Scoreboard;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
-public final class VerifyPaper extends JavaPlugin implements Listener {
+public final class VerifyPaper extends JavaPlugin {
 
     private VerifyConfig config;
     private VerifyManager verifyManager;
+    private Gson gson;
+    private Scoreboard scoreboard;
+    private final Map<UUID, PlayerIdentity> verificationResponses = new ConcurrentHashMap<>();
+    private PlayerListener playerListener;
+    private VisualManager visualManager;
+
+    public PlayerListener getPlayerListener() {
+        return playerListener;
+    }
+
+    public VisualManager getVisualManager() {
+        return visualManager;
+    }
+
+    public Scoreboard getPlayerNamesScoreboard() {
+        if (scoreboard == null) {
+            scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
+        }
+        return scoreboard;
+    }
+
+    public VerifyConfig getPluginConfig() {
+        return config;
+    }
+
+    public VerifyManager getVerifyManager() {
+        return verifyManager;
+    }
+
+    public Gson getGson() {
+        return gson;
+    }
+
+    public void cacheIdentity(UUID uuid, PlayerIdentity identity) {
+        verificationResponses.put(uuid, identity);
+
+        Player player = Bukkit.getPlayer(uuid);
+        if (player != null && player.isOnline() && visualManager != null) {
+            Bukkit.getScheduler().runTask(this, () -> visualManager.updateVisuals(player, identity));
+        }
+    }
+
+    public void removeIdentity(UUID uuid) {
+        verificationResponses.remove(uuid);
+    }
+
+    public boolean isCached(UUID uuid) {
+        return verificationResponses.containsKey(uuid);
+    }
+
+    public PlayerIdentity getIdentity(UUID uuid) {
+        return verificationResponses.get(uuid);
+    }
 
     @Override
     public void onEnable() {
-        Gson gson = new GsonBuilder()
+        this.gson = new GsonBuilder()
                 .setPrettyPrinting()
                 .create();
+
+        Bukkit.getScoreboardManager();
+        this.scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            player.setScoreboard(this.scoreboard);
+        }
+
         Path dataDirectory = getDataFolder().toPath();
 
         try {
@@ -37,16 +100,30 @@ public final class VerifyPaper extends JavaPlugin implements Listener {
             this.config = VerifyConfig.createDefault();
         }
 
-        this.verifyManager = new VerifyManager(config);
+        if (!config.isProxyMode()) {
+            this.verifyManager = new VerifyManager(config);
+        }
 
-        getServer().getPluginManager().registerEvents(this, this);
+        this.visualManager = new VisualManager(this);
+        this.playerListener = new PlayerListener(this);
+        getServer().getPluginManager().registerEvents(playerListener, this);
 
-        startVerificationTask();
+        if (config.isProxyMode()) {
+            getServer().getMessenger().registerIncomingPluginChannel(this, PlayerIdentity.CHANNEL, new VerifyPluginMessageListener(this));
+            getLogger().info("Proxy mode enabled, listening for verification data from Velocity");
+        } else {
+            startVerificationTask();
+        }
 
         getLogger().info("Plugin initialized successfully");
     }
 
     private void startVerificationTask() {
+        if (config.getVerificationIntervalMinutes() <= 0) {
+            getLogger().info("Periodic verification task is disabled (interval set to 0)");
+            return;
+        }
+
         long intervalTicks = config.getVerificationIntervalMinutes() * 60L * 20;
         getLogger().info("Scheduling verification task to run every " + config.getVerificationIntervalMinutes() + " minutes");
 
@@ -57,7 +134,7 @@ public final class VerifyPaper extends JavaPlugin implements Listener {
 
                 verifyManager.getClient().checkVerification(uuid)
                         .thenAccept(response -> {
-                            verifyManager.getTimeoutStrikes().remove(uuid);
+                            verifyManager.resetTimeoutStrikes(uuid);
 
                             if (!response.isAllowed()) {
                                 getLogger().info("Player " + playerName + " (" + uuid + ") verification failed: " + response.getReason());
@@ -66,12 +143,12 @@ public final class VerifyPaper extends JavaPlugin implements Listener {
                                         player.kick(MessageUtils.buildReverificationFailureMessage(config))
                                 );
                             } else {
-                                getLogger().log(Level.FINE, "Player " + playerName + " (" + uuid + ") verified successfully");
+                                getLogger().info("Player " + playerName + " (" + uuid + ") re-verified successfully");
+                                cacheIdentity(uuid, PlayerIdentity.from(response, uuid));
                             }
                         })
                         .exceptionally(ex -> {
-                            int strikes = verifyManager.getTimeoutStrikes().getOrDefault(uuid, 0) + 1;
-                            verifyManager.getTimeoutStrikes().put(uuid, strikes);
+                            int strikes = verifyManager.incrementTimeoutStrike(uuid);
 
                             getLogger().warning("Verification API exception for player " + playerName +
                                     " (" + uuid + "), strike " + strikes + "/" + config.getMaxTimeoutStrikes());
@@ -80,7 +157,7 @@ public final class VerifyPaper extends JavaPlugin implements Listener {
                                 Bukkit.getScheduler().runTask(this, () ->
                                         player.kick(MessageUtils.buildReverificationFailureMessage(config))
                                 );
-                                verifyManager.getTimeoutStrikes().remove(uuid);
+                                verifyManager.resetTimeoutStrikes(uuid);
                                 getLogger().warning("Player " + playerName + " (" + uuid + ") disconnected due to repeated API timeouts");
                             }
 
@@ -88,21 +165,5 @@ public final class VerifyPaper extends JavaPlugin implements Listener {
                         });
             }
         }, 0L, intervalTicks);
-    }
-
-    @EventHandler
-    public void onAsyncPlayerPreLogin(AsyncPlayerPreLoginEvent event) {
-        UUID uuid = event.getUniqueId();
-        String ip = event.getAddress().getHostAddress();
-
-        try {
-            VerificationResult result = verifyManager.checkPlayer(uuid, ip).join();
-            if (!result.isAllowed()) {
-                event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_BANNED, result.getKickMessage());
-            }
-        } catch (Exception e) {
-            getLogger().log(Level.SEVERE, "Error checking verification for " + event.getName(), e);
-            event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, MessageUtils.buildErrorMessage(config));
-        }
     }
 }

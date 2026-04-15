@@ -1,25 +1,24 @@
 package net.sylphian.verify.common;
 
 import net.kyori.adventure.text.Component;
-import net.sylphian.verify.api.model.VerificationResponse;
 
 public class VerificationResult {
     private final boolean allowed;
     private final Component kickMessage;
-    private final VerificationResponse response;
+    private final PlayerIdentity identity;
 
-    private VerificationResult(boolean allowed, Component kickMessage, VerificationResponse response) {
+    private VerificationResult(boolean allowed, Component kickMessage, PlayerIdentity identity) {
         this.allowed = allowed;
         this.kickMessage = kickMessage;
-        this.response = response;
+        this.identity = identity;
     }
 
-    public static VerificationResult allowed() {
-        return new VerificationResult(true, null, null);
+    public static VerificationResult allowed(PlayerIdentity identity) {
+        return new VerificationResult(true, null, identity);
     }
 
-    public static VerificationResult denied(Component kickMessage, VerificationResponse response) {
-        return new VerificationResult(false, kickMessage, response);
+    public static VerificationResult denied(Component kickMessage, PlayerIdentity identity) {
+        return new VerificationResult(false, kickMessage, identity);
     }
 
     public boolean isAllowed() {
@@ -30,7 +29,7 @@ public class VerificationResult {
         return kickMessage;
     }
 
-    public VerificationResponse getResponse() {
-        return response;
+    public PlayerIdentity getIdentity() {
+        return identity;
     }
 }

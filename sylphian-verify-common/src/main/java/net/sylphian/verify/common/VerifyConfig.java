@@ -5,13 +5,13 @@ import com.google.gson.Gson;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
 public class VerifyConfig {
-    private static final String DEFAULT_API_URL = "http://www.example.com/api/verify/minecraft";
     private static final String DEFAULT_API_KEY = "";
     private static final int DEFAULT_VERIFICATION_INTERVAL_MINUTES = 5;
     private static final int DEFAULT_MAX_TIMEOUT_STRIKES = 3;
@@ -20,11 +20,10 @@ public class VerifyConfig {
     private static final int DEFAULT_COOLDOWN_MINUTES = 10;
     private static final int DEFAULT_ATTEMPT_EXPIRY_MINUTES = 5;
     private static final int DEFAULT_API_TIMEOUT_SECONDS = 10;
+    private static final boolean DEFAULT_PROXY_MODE = false;
+    private static final String DEFAULT_FORUM_BASE_URL = "https://example.com/community";
 
-    /**
-     * Base URL for the XenForo/Verification API.
-     */
-    private String apiUrl;
+    private static final String API_PATH = "/api/verify/minecraft";
 
     /**
      * API Key for authorization with the XenForo/Verification API.
@@ -68,6 +67,18 @@ public class VerifyConfig {
     private Integer apiTimeoutSeconds;
 
     /**
+     * Whether the plugin is running in a proxy network (Velocity + Paper).
+     * If true, the Paper plugin will listen for verification data from Velocity instead of calling the API directly.
+     * On Velocity, this should be false as it will always call the API.
+     */
+    private Boolean proxyMode;
+
+    /**
+     * Base URL for the community/forum for profile links.
+     */
+    private String forumBaseUrl;
+
+    /**
      * Customizable kick messages for various API response reasons.
      * Key is the raw reason from the API, value is the message displayed to the player.
      */
@@ -91,15 +102,10 @@ public class VerifyConfig {
 
     public boolean ensureDefaults() {
         boolean modified = false;
-        if (apiUrl == null) {
-            apiUrl = DEFAULT_API_URL;
-            modified = true;
-        }
         if (apiKey == null) {
             apiKey = DEFAULT_API_KEY;
             modified = true;
         }
-
         if (verificationIntervalMinutes == null) {
             verificationIntervalMinutes = DEFAULT_VERIFICATION_INTERVAL_MINUTES;
             modified = true;
@@ -128,6 +134,14 @@ public class VerifyConfig {
             apiTimeoutSeconds = DEFAULT_API_TIMEOUT_SECONDS;
             modified = true;
         }
+        if (proxyMode == null) {
+            proxyMode = DEFAULT_PROXY_MODE;
+            modified = true;
+        }
+        if (forumBaseUrl == null) {
+            forumBaseUrl = DEFAULT_FORUM_BASE_URL;
+            modified = true;
+        }
 
         if (apiResponses == null) {
             apiResponses = createDefaultApiResponses();
@@ -143,7 +157,9 @@ public class VerifyConfig {
         return modified;
     }
 
-    public String getApiUrl() { return apiUrl; }
+    public String getApiUrl() {
+        return URI.create(forumBaseUrl).resolve(API_PATH).toString();
+    }
     public String getApiKey() { return apiKey; }
     public int getVerificationIntervalMinutes() { return verificationIntervalMinutes; }
     public int getMaxTimeoutStrikes() { return maxTimeoutStrikes; }
@@ -152,6 +168,8 @@ public class VerifyConfig {
     public int getCooldownMinutes() { return cooldownMinutes; }
     public int getAttemptExpiryMinutes() { return attemptExpiryMinutes; }
     public int getApiTimeoutSeconds() { return apiTimeoutSeconds; }
+    public boolean isProxyMode() { return proxyMode; }
+    public String getForumBaseUrl() { return forumBaseUrl; }
     public Map<String, String> getApiResponses() { return apiResponses; }
 
     public static VerifyConfig load(Path path, Gson gson) throws IOException {
