@@ -91,35 +91,6 @@ public class VerifyManager {
         }
     }
 
-    public CompletableFuture<VerificationResult> checkPeriodic(UUID uuid) {
-        return client.checkVerification(uuid)
-                .handle((response, ex) -> {
-                    if (ex != null) {
-                        if (config.isStrikeOnApiFailure()) {
-                            int count = incrementStrike(uuid);
-                            if (count >= config.getMaxStrikes()) {
-                                resetStrikes(uuid);
-                                return VerificationResult.denied(MessageUtils.buildReverificationFailureMessage(config), null);
-                            }
-                        }
-                        return VerificationResult.allowed(null);
-                    }
-
-                    PlayerIdentity identity = PlayerIdentity.from(response, uuid);
-                    if (response.isAllowed()) {
-                        resetStrikes(uuid);
-                        return VerificationResult.allowed(identity);
-                    } else {
-                        int count = incrementStrike(uuid);
-                        if (count >= config.getMaxStrikes()) {
-                            resetStrikes(uuid);
-                            return VerificationResult.denied(MessageUtils.buildReverificationFailureMessage(config), identity);
-                        }
-                        return VerificationResult.allowed(identity);
-                    }
-                });
-    }
-
     public CompletableFuture<Map<UUID, VerificationResult>> checkPeriodicBatch(Collection<UUID> uuids) {
         if (uuids == null || uuids.isEmpty()) {
             return CompletableFuture.completedFuture(Map.of());
