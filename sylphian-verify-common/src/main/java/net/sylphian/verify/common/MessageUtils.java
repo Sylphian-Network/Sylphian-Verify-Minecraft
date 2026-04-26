@@ -41,7 +41,7 @@ public class MessageUtils {
         String timeLeft = String.format("%d:%02d", minutes, seconds);
 
         VerificationReason reason = VerificationReason.BRUTE_FORCE_BLOCKED;
-        String displayReason = config.getApiResponses().getOrDefault(reason, "Too many failed attempts. Please try again in " + timeLeft + " minutes.");
+        String displayReason = config.getApiResponses().getOrDefault(reason, "Too many failed attempts. Please try again in " + timeLeft + ".");
 
         if (displayReason.contains("{time}")) {
             displayReason = displayReason.replace("{time}", timeLeft);
