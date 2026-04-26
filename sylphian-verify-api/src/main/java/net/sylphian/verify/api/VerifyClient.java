@@ -71,8 +71,6 @@ public class VerifyClient implements VerifyService {
                                 return new VerificationResponse(false, VerificationReason.API_FAILURE_NO_MESSAGE);
                             }
                         } catch (com.google.gson.JsonSyntaxException e) {
-                            System.err.println("[Verify] Failed to parse API response. Status: " + code);
-                            System.err.println("[Verify] Response body: " + body);
                             throw new RuntimeException("API returned invalid JSON. Check console for details.", e);
                         }
                     } else {
@@ -127,8 +125,6 @@ public class VerifyClient implements VerifyService {
                                 throw new RuntimeException("API reported failure: " + (envelope.getMessage() != null ? envelope.getMessage() : "No message provided"));
                             }
                         } catch (com.google.gson.JsonSyntaxException e) {
-                            System.err.println("[Verify] Failed to parse API response. Status: " + code);
-                            System.err.println("[Verify] Response body: " + body);
                             throw new RuntimeException("API returned invalid JSON. Check console for details.", e);
                         }
                     } else {
