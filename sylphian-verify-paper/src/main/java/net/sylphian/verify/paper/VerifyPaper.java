@@ -146,6 +146,8 @@ public final class VerifyPaper extends JavaPlugin {
             verifyManager.checkPeriodicBatch(uuids)
                     .thenAccept(results -> {
                         for (Player player : onlinePlayers) {
+                            if (!player.isOnline()) continue;
+
                             UUID uuid = player.getUniqueId();
                             String playerName = player.getName();
                             VerificationResult result = results.get(uuid);
@@ -153,9 +155,11 @@ public final class VerifyPaper extends JavaPlugin {
 
                             if (!result.isAllowed()) {
                                 getLogger().warning("Player " + playerName + " (" + uuid + ") failed periodic verification. Disconnecting.");
-                                Bukkit.getScheduler().runTask(this, () ->
-                                        player.kick(result.getKickMessage())
-                                );
+                                Bukkit.getScheduler().runTask(this, () -> {
+                                    if (player.isOnline()) {
+                                        player.kick(result.getKickMessage());
+                                    }
+                                });
                             } else {
                                 int strikes = verifyManager.getStrikeCount(uuid);
                                 if (strikes > 0) {
