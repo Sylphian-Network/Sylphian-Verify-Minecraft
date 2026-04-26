@@ -4,7 +4,10 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
 import net.sylphian.verify.api.VerifyClient;
-
+import net.sylphian.verify.api.model.VerificationResponse;
+ 
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -114,6 +117,54 @@ public class VerifyManager {
                         }
                         return VerificationResult.allowed(identity);
                     }
+                });
+    }
+
+    public CompletableFuture<Map<UUID, VerificationResult>> checkPeriodicBatch(Collection<UUID> uuids) {
+        if (uuids == null || uuids.isEmpty()) {
+            return CompletableFuture.completedFuture(Map.of());
+        }
+
+        return client.checkVerificationBatch(uuids)
+                .handle((responses, ex) -> {
+                    Map<UUID, VerificationResult> results = new HashMap<>();
+                    if (ex != null) {
+                        for (UUID uuid : uuids) {
+                            if (config.isStrikeOnApiFailure()) {
+                                int count = incrementStrike(uuid);
+                                if (count >= config.getMaxStrikes()) {
+                                    resetStrikes(uuid);
+                                    results.put(uuid, VerificationResult.denied(MessageUtils.buildReverificationFailureMessage(config), null));
+                                    continue;
+                                }
+                            }
+                            results.put(uuid, VerificationResult.allowed(null));
+                        }
+                        return results;
+                    }
+
+                    for (UUID uuid : uuids) {
+                        VerificationResponse response = responses.get(uuid.toString());
+                        if (response == null) {
+                            results.put(uuid, VerificationResult.allowed(null));
+                            continue;
+                        }
+
+                        PlayerIdentity identity = PlayerIdentity.from(response, uuid);
+                        if (response.isAllowed()) {
+                            resetStrikes(uuid);
+                            results.put(uuid, VerificationResult.allowed(identity));
+                        } else {
+                            int count = incrementStrike(uuid);
+                            if (count >= config.getMaxStrikes()) {
+                                resetStrikes(uuid);
+                                results.put(uuid, VerificationResult.denied(MessageUtils.buildReverificationFailureMessage(config), identity));
+                            } else {
+                                results.put(uuid, VerificationResult.allowed(identity));
+                            }
+                        }
+                    }
+                    return results;
                 });
     }
 

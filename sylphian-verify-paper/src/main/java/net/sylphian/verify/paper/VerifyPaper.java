@@ -3,6 +3,7 @@ package net.sylphian.verify.paper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.sylphian.verify.common.PlayerIdentity;
+import net.sylphian.verify.common.VerificationResult;
 import net.sylphian.verify.common.VerifyConfig;
 import net.sylphian.verify.common.VerifyManager;
 import net.sylphian.verify.paper.listener.PlayerListener;
@@ -15,10 +16,13 @@ import org.bukkit.scoreboard.Scoreboard;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 public final class VerifyPaper extends JavaPlugin {
 
@@ -127,17 +131,26 @@ public final class VerifyPaper extends JavaPlugin {
         getLogger().info("Scheduling verification task to run every " + config.getVerificationIntervalMinutes() + " minutes");
 
         Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
-            int playerCount = Bukkit.getOnlinePlayers().size();
+            Collection<? extends Player> onlinePlayers = Bukkit.getOnlinePlayers();
+            int playerCount = onlinePlayers.size();
             if (playerCount > 0) {
                 getLogger().info("Starting periodic verification check for " + playerCount + " players");
+            } else {
+                return;
             }
 
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                UUID uuid = player.getUniqueId();
-                String playerName = player.getName();
+            List<UUID> uuids = onlinePlayers.stream()
+                    .map(Player::getUniqueId)
+                    .collect(Collectors.toList());
 
-                verifyManager.checkPeriodic(uuid)
-                        .thenAccept(result -> {
+            verifyManager.checkPeriodicBatch(uuids)
+                    .thenAccept(results -> {
+                        for (Player player : onlinePlayers) {
+                            UUID uuid = player.getUniqueId();
+                            String playerName = player.getName();
+                            VerificationResult result = results.get(uuid);
+                            if (result == null) continue;
+
                             if (!result.isAllowed()) {
                                 getLogger().warning("Player " + playerName + " (" + uuid + ") failed periodic verification. Disconnecting.");
                                 Bukkit.getScheduler().runTask(this, () ->
@@ -152,8 +165,8 @@ public final class VerifyPaper extends JavaPlugin {
                                     cacheIdentity(uuid, result.getIdentity());
                                 }
                             }
-                        });
-            }
+                        }
+                    });
         }, 0L, intervalTicks);
     }
 }

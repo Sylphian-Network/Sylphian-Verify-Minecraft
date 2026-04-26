@@ -11,6 +11,7 @@ import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import net.sylphian.verify.common.PlayerIdentity;
+import net.sylphian.verify.common.VerificationResult;
 import net.sylphian.verify.common.VerifyConfig;
 import net.sylphian.verify.common.VerifyManager;
 import net.sylphian.verify.velocity.listener.PlayerListener;
@@ -18,10 +19,13 @@ import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Plugin(
         id = "sylphian-verify",
@@ -79,15 +83,22 @@ public class VerifyVelocity {
         logger.info("Scheduling verification task to run every {} minutes", config.getVerificationIntervalMinutes());
 
         proxy.getScheduler().buildTask(this, () -> {
-                    if (!proxy.getAllPlayers().isEmpty()) {
-                        logger.info("Starting periodic verification check for {} players", proxy.getPlayerCount());
+                    Collection<Player> allPlayers = proxy.getAllPlayers();
+                    if (!allPlayers.isEmpty()) {
+                        logger.info("Starting periodic verification check for {} players", allPlayers.size());
                     }
 
-                    for (Player player : proxy.getAllPlayers()) {
-                        UUID uuid = player.getUniqueId();
+                    List<UUID> uuids = allPlayers.stream()
+                            .map(Player::getUniqueId)
+                            .collect(Collectors.toList());
 
-                        verifyManager.checkPeriodic(uuid)
-                                .thenAccept(result -> {
+                    verifyManager.checkPeriodicBatch(uuids)
+                            .thenAccept(results -> {
+                                for (Player player : allPlayers) {
+                                    UUID uuid = player.getUniqueId();
+                                    VerificationResult result = results.get(uuid);
+                                    if (result == null) continue;
+
                                     if (!result.isAllowed()) {
                                         logger.warn("Player {} ({}) failed periodic verification. Disconnecting.", player.getUsername(), uuid);
                                         verifiedPlayers.remove(uuid);
@@ -102,8 +113,8 @@ public class VerifyVelocity {
                                             sendVerificationData(player, result.getIdentity());
                                         }
                                     }
-                                });
-                    }
+                                }
+                            });
                 })
                 .delay(0, TimeUnit.SECONDS)
                 .repeat(config.getVerificationIntervalMinutes(), TimeUnit.MINUTES)
