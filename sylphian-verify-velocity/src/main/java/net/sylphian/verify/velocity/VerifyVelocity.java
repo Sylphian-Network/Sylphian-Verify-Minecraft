@@ -95,6 +95,8 @@ public class VerifyVelocity {
                     verifyManager.checkPeriodicBatch(uuids)
                             .thenAccept(results -> {
                                 for (Player player : allPlayers) {
+                                    if (!player.isActive()) continue;
+                                    
                                     UUID uuid = player.getUniqueId();
                                     VerificationResult result = results.get(uuid);
                                     if (result == null) continue;
